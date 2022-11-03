@@ -8,10 +8,10 @@ class ItemsController < ApplicationController
   def index
     @items = Item.includes(:tags)
 
+    @items = @items.favorited_by(params[:title]) if params[:title].present?
     @items = @items.tagged_with(params[:tag]) if params[:tag].present?
     @items = @items.sellered_by(params[:seller]) if params[:seller].present?
     @items = @items.favorited_by(params[:favorited]) if params[:favorited].present?
-    @items = @items.favorited_by(params[:title]) if params[:title].present?
 
     @items_count = @items.count
 
