@@ -11,7 +11,6 @@ class ItemsController < ApplicationController
     @items = @items.tagged_with(params[:tag]) if params[:tag].present?
     @items = @items.sellered_by(params[:seller]) if params[:seller].present?
     @items = @items.favorited_by(params[:favorited]) if params[:favorited].present?
-    @items = @items.title(params[:title]) if params[:title].present?
 
     @items_count = @items.count
 
@@ -34,7 +33,7 @@ class ItemsController < ApplicationController
             following: signed_in? ? current_user.following?(item.user) : false,
           },
           favorited: signed_in? ? current_user.favorited?(item) : false,
-          favorites_count: item.favorites_count || 0
+          favoritesCount: item.favorites_count || 0
         }
       },
       items_count: @items_count
@@ -46,7 +45,7 @@ class ItemsController < ApplicationController
 
     @items_count = @items.count
 
-    @items = @items.order(created_at: :desc).offset(params[:offset] || 0).limit(params[:limit] || 20)
+    @items = @items.order(created_at: :asc).offset(params[:offset] || 0).limit(params[:limit] || 20)
 
     render :index
   end
@@ -71,7 +70,7 @@ class ItemsController < ApplicationController
     @item = Item.find_by!(slug: params[:slug])
 
     if @item.user_id == @current_user_id
-      @item.update_attributes(item_params)
+      @item.update(item_params)
 
       render :show
     else

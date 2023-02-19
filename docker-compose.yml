@@ -3,7 +3,7 @@ services:
   anythink-backend-rails:
     build: ./backend
     container_name: anythink-backend-rails
-    command: sh -c "cd backend && bundle install && /wait-for-it.sh postgres-rails:5432 -q -t 60 && rm -f /tmp/server.pid && exec rails s -b 0.0.0.0 --pid /tmp/server.pid"
+    command: sh -c "cd backend && bundle install && /wait-for-it.sh postgres-rails:5432 -q -t 60 && ./start_rails.sh"
 
     working_dir: /usr/src
     volumes:
@@ -14,13 +14,14 @@ services:
       - RAILS_ENV=development
       - PORT=3000
       - DATABASE_URL=postgres://user:@postgres-rails:5432
+      - GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN=${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}
     depends_on:
       - "postgres-rails"
 
   anythink-frontend-react:
     build: ./frontend
     container_name: anythink-frontend-react
-    command: sh -c "cd frontend && yarn install && yarn start"
+    command: sh -c "cd frontend && yarn install && /wait-for-it.sh anythink-backend-rails:3000 -t 120 --strict -- curl --head -X GET --retry 30 --retry-connrefused --retry-delay 1 anythink-backend-rails:3000/api/ping  && yarn start"
     environment:
       - NODE_ENV=development
       - PORT=3001
@@ -32,6 +33,8 @@ services:
       - /usr/src/frontend/node_modules
     ports:
       - "3001:3001"
+    depends_on:
+      - "anythink-backend-rails"
 
   postgres-rails:
     container_name: postgres-rails
@@ -47,3 +50,13 @@ services:
       - ~/posgres/data:/data/db
     ports:
       - '5433:5432'
+
+  anythink-ack:
+    build: ./frontend
+    container_name: anythink-ack
+    command: sh -c "/wait-for-it.sh anythink-frontend-react:3001 -q -t 1000 && ./anythink_ack.sh"
+    working_dir: /usr/src
+    volumes:
+      - ./:/usr/src/
+    depends_on:
+      - "anythink-frontend-react"
